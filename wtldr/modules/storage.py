@@ -3,6 +3,7 @@ import sqlite3
 from wtldr.modules import emailing
 
 
+# TODO: Create tests
 class WTLDRDatabase:
     def __init__(self, db_path):
         self.conn = sqlite3.connect(db_path)
@@ -19,12 +20,12 @@ class WTLDRDatabase:
     def _create_emails_table(self):
         stmt = """
         CREATE TABLE emails (
-            email_id INT,
-            sender VARCHAR(50),
+            email_id INT NOT NULL,
+            sender VARCHAR(50) NOT NULL,
             subject VARCHAR(200),
-            body LONGTEXT,
-            time_sent VARCHAR(30),
-            processed BOOL,
+            body LONGTEXT NOT NULL,
+            time_sent VARCHAR(30) NOT NULL,
+            processed BOOL NOT NULL DEFAULT 0,
             PRIMARY KEY(email_id)
         );
         """
@@ -36,10 +37,10 @@ class WTLDRDatabase:
         stmt = """
         CREATE TABLE tldr_summaries (
             summary_id INT AUTO_INCREMENT,
-            source_email_id INT,
-            summary LONGTEXT,
-            url TEXT,
-            processed BOOL,
+            source_email_id INT NOT NULL,
+            summary LONGTEXT NOT NULL,
+            url TEXT NOT NULL,
+            processed BOOL NOT NULL DEFAULT 0,
             PRIMARY KEY(summary_id),
             FOREIGN KEY (source_email_id) REFERENCES emails(email_id)
         );
@@ -49,7 +50,9 @@ class WTLDRDatabase:
         self.conn.commit()
 
     def insert_email(self, email: emailing.Email):
-        ...  # TODO
+        values = (email.email_id, email.sender, email.subject, email.body, email.time_sent)
+        self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?)")
+        self.conn.commit()
 
 
 def create_new(db_path: str) -> WTLDRDatabase:
@@ -57,7 +60,7 @@ def create_new(db_path: str) -> WTLDRDatabase:
     try:
         file = open(db_path, "w")
         file.close()
-    except FileNotFoundError:
+    except FileNotFoundError:  # TODO use logging
         print("Error: The specified file path does not exist.")
     except IsADirectoryError:
         print("Error: The specified path is a directory, not a file.")
@@ -77,6 +80,3 @@ def create_new(db_path: str) -> WTLDRDatabase:
         raise
 
     return db
-
-
-create_new("test.db")

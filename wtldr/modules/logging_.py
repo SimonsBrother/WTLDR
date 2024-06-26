@@ -2,7 +2,8 @@ from datetime import datetime
 import logging
 
 
-def create_logger():
+# TODO add param to configure folder
+def create_logger() -> logging.Logger:
     logger = logging.getLogger(__name__)
 
     # Prepare file handler, first generate a name for the log file based on the time

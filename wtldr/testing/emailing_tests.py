@@ -1,3 +1,6 @@
+""" Some tests for the emailing module.
+Note that these tests are manual, and require an email and password. """
+
 import wtldr.modules.emailing as emailing
 from datetime import datetime
 
@@ -280,6 +283,9 @@ def test_search_for_tldr(email_manager: emailing.EmailManager):
         email_obj = email_manager.get_email(email_id)
         sender = email_obj.sender
         assert "dan@tldrnewsletter.com" in sender
+
+
+# TODO add invalid tests
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1 @@
+# Test logging too via tests in emailing and storage tests
