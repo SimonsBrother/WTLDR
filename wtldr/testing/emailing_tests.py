@@ -286,14 +286,15 @@ def test_search_for_tldr(email_manager: emailing.EmailManager):
 
 
 # TODO add invalid tests
+# TODO test Email static methods
 
 
 if __name__ == "__main__":
-    username_ = input("Email: ")
-    password_ = input("Password: ")
-    imap_server_ = "imap-mail.outlook.com"  # https://www.systoolsgroup.com/imap/
+    username = input("Email: ")
+    password = input("Password: ")
+    imap_server = "imap-mail.outlook.com"  # https://www.systoolsgroup.com/imap/ for other servers
 
-    email_manager_ = emailing.EmailManager(username_, password_, imap_server_)
+    email_manager_ = emailing.EmailManager(username, password, imap_server)
 
     test_first_email(email_manager_)
     test_tldr_email(email_manager_)

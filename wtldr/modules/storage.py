@@ -1,9 +1,9 @@
 import sqlite3
+from pathlib import Path
 
 from wtldr.modules import emailing
 
 
-# TODO: Create tests
 class WTLDRDatabase:
     def __init__(self, db_path):
         self.conn = sqlite3.connect(db_path)
@@ -51,32 +51,23 @@ class WTLDRDatabase:
 
     def insert_email(self, email: emailing.Email):
         values = (email.email_id, email.sender, email.subject, email.body, email.time_sent)
-        self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?)")
+        self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?)", values)
         self.conn.commit()
 
 
-def create_new(db_path: str) -> WTLDRDatabase:
-    # Create the new file
-    try:
-        file = open(db_path, "w")
-        file.close()
-    except FileNotFoundError:  # TODO use logging
-        print("Error: The specified file path does not exist.")
-    except IsADirectoryError:
-        print("Error: The specified path is a directory, not a file.")
-    except PermissionError:
-        print("Error: You do not have permission to write to this file.")
-    except OSError as e:
-        print(f"OS error occurred: {e}")
-    except ValueError as e:
-        print(f"Invalid mode specified: {e}")
+def create_new_wtldr_db(db_path: Path | str) -> WTLDRDatabase:
+    """ Creates a database file with the path specified, and creates the tables needed for the database to function.
+
+    :param db_path: path to the database file.
+    :return: a WTLDRDatabase instance.
+    """
+    # Create the new file - exceptions should be handled outside the function
+    file = open(db_path, "w")
+    file.close()
 
     db = WTLDRDatabase(db_path)
 
     # Create database contents
-    try:
-        db.create_tables()
-    except:  # TODO add specific exceptions
-        raise
+    db.create_tables()
 
     return db
