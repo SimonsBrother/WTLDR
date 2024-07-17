@@ -4,20 +4,25 @@ Note that these tests are manual, and require an email and password. """
 import wtldr.modules.emailing as emailing
 from datetime import datetime
 
+from dotenv import dotenv_values
+
+from wtldr.modules.logging_ import create_logger
+
 
 def test_first_email(email_manager: emailing.EmailManager):
-    """ Tries to get the first email, which is an email I sent to the account. """
+    """ Tries to get the first email using get_email, which is an email I sent to the account, which ensures emails can be retrieved by ID.
+     This indirectly tests the Email static methods. """
     expected_email = emailing.Email(1, 'Caleb Hair <calebthair@outlook.com>', 'Lab rat test subject',
                                     "Lab rat lab rat lab rat", datetime.fromisoformat('2024-05-13 13:33:47'))
 
-    actual_email = email_manager.get_email(1)
+    actual_email = email_manager.get_email_from_mailbox(1)
 
     assert expected_email.__repr__() == actual_email.__repr__()
     assert expected_email.body.rstrip() == actual_email.body.rstrip()
 
 
 def test_tldr_email(email_manager: emailing.EmailManager):
-    """ Tries to get a typical TLDR email. """
+    """ Tries to get a typical TLDR email using get_email. """
 
     # I think due to subtle differences in the body between copying it from a terminal compared to when it
     # is retrieved makes comparing the exact contents impractical, so I'm checking the approximate length.
@@ -269,35 +274,36 @@ Links:
 [25] https://tldr.tech/tech/manage?email=calebslabrat%40outlook.com"""
     expected_email = emailing.Email(3, 'TLDR <dan@tldrnewsletter.com>', 'b\'GPT-4o crushes leaderboard \'',
                                     "", datetime.fromisoformat('2024-05-14 10:26:00'))
-    actual_email = email_manager.get_email(3)
+    actual_email = email_manager.get_email_from_mailbox(3)
 
-    assert expected_email.__repr__() == actual_email.__repr__()
+    assert expected_email.__repr__() == actual_email.__repr__()  # Compares the object values excluding the body.
     # Ensure the contents are approximately the same length
     assert abs(len(actual_email.body.strip()) - len(approximate_expected_body.strip())) < 300
 
 
 def test_search_for_tldr(email_manager: emailing.EmailManager):
-    limit = 3  # Limit the number of TLDR emails checked
-    tldr_emails = email_manager.get_tldr_emails()
-    for email_id in tldr_emails[:limit]:
-        email_obj = email_manager.get_email(email_id)
+    """ Gets all the TLDR emails using get_tldr_emails and ensures they have the same sender. """
+    tldr_emails = email_manager.get_tldr_email_ids()
+    for email_id in tldr_emails:
+        email_obj = email_manager.get_email_from_mailbox(email_id)
         sender = email_obj.sender
         assert "dan@tldrnewsletter.com" in sender
 
 
-# TODO add invalid tests
-# TODO test Email static methods
-
-
 if __name__ == "__main__":
-    username = input("Email: ")
-    password = input("Password: ")
+    secrets = dotenv_values()
+
+    username = secrets["EMAIL"]
+    password = secrets["PASSWORD"]
     imap_server = "imap-mail.outlook.com"  # https://www.systoolsgroup.com/imap/ for other servers
 
-    email_manager_ = emailing.EmailManager(username, password, imap_server)
+    email_manager_ = emailing.EmailManager(username, password, imap_server, create_logger("/Users/calebhair/Documents/Projects/WTLDR/wtldr/testing/logs"))
 
     test_first_email(email_manager_)
+    print("Passed")
     test_tldr_email(email_manager_)
+    print("Passed")
     test_search_for_tldr(email_manager_)
+    print("Passed")
 
     del email_manager_
