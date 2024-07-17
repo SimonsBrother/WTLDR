@@ -7,6 +7,7 @@ The EmailManager class, for handling interactions with an email account.
 
 import email
 import imaplib
+import mailbox
 import ssl
 from dataclasses import dataclass
 from datetime import datetime
@@ -184,6 +185,10 @@ class EmailManager:
                 email_obj = Email.get_email_details(msg, email_id)
 
         return email_obj
+
+    def open_mailbox(self, mailbox_: str = "INBOX") -> None:
+        """ Opens a mailbox. """
+        self.imap.select(mailbox_)
 
     def close_mailbox(self):
         """ Try to close any open mailbox. Logs the exception on failure. """

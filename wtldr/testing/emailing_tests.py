@@ -284,10 +284,14 @@ Links:
 def test_search_for_tldr(email_manager: emailing.EmailManager):
     """ Gets all the TLDR emails using get_tldr_emails and ensures they have the same sender. """
     tldr_emails = email_manager.get_tldr_email_ids()
+
+    email_manager.open_mailbox()
     for email_id in tldr_emails:
-        email_obj = email_manager.get_email_from_mailbox(email_id)
+        email_obj = email_manager.get_email(email_id)
         sender = email_obj.sender
         assert "dan@tldrnewsletter.com" in sender
+
+    email_manager.close_mailbox()
 
 
 if __name__ == "__main__":
