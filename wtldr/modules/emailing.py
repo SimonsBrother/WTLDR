@@ -7,13 +7,13 @@ The EmailManager class, for handling interactions with an email account.
 
 import email
 import imaplib
-import mailbox
 import ssl
-from dataclasses import dataclass
 from datetime import datetime
 from email.header import decode_header
 from email.message import Message
 from logging import Logger
+
+from pydantic import BaseModel, validate_call
 
 # For converting timestamp of emails into a number, for converting the timestamp to datetime object.
 month_name_to_number = {
@@ -32,13 +32,7 @@ month_name_to_number = {
 }
 
 
-# For typing
-class Email:
-    pass
-
-
-@dataclass
-class Email:
+class Email(BaseModel):
     """ Dataclass for storing details about emails """
     email_id: int
     sender: str
@@ -124,11 +118,14 @@ class Email:
         return sent_datetime
 
     @staticmethod
-    def get_email_details(msg: Message, email_id: int) -> Email:
+    def get_email_details(msg: Message, email_id: int):
         """ Gets the sender, subject, content type, body, and datetime sent. Requires the email ID as a parameter,
         because any time this function is used, the ID will probably already have been retrieved. """
-        return Email(email_id, Email.get_sender(msg), Email.get_subject(msg),
-                     Email.get_body(msg), Email.get_sent_datetime(msg))
+        return Email(email_id=email_id,
+                     sender=Email.get_sender(msg),
+                     subject=Email.get_subject(msg),
+                     body=Email.get_body(msg),
+                     time_sent=Email.get_sent_datetime(msg))
 
 
 class EmailManager:
@@ -143,12 +140,13 @@ class EmailManager:
         # TLS may not be supported
         try:
             self.imap.starttls(ssl_context=ssl.create_default_context())
-        except imaplib.IMAP4.abort as e:
+        except imaplib.IMAP4.abort:
             logger.warning("TLS not supported by server.")
 
         self.imap.login(username, password)
 
-    def get_email_from_mailbox(self, email_id: int, mailbox="INBOX") -> Email:
+    @validate_call
+    def get_email_from_mailbox(self, email_id: int, mailbox: str = "INBOX") -> Email:
         """ Opens the mailbox given (INBOX by default), creates an Email object from an email ID, and closes the mailbox.
         May raise exceptions.
         Use this for retrieving some emails - if you need to retrieve many emails, use get_email.
@@ -164,6 +162,7 @@ class EmailManager:
         self.close_mailbox()
         return email_obj
 
+    @validate_call
     def get_email(self, email_id: int) -> Email:
         """ Creates an Email object from an email ID.
         NOTE: A mailbox should be opened before this is called.
@@ -186,6 +185,7 @@ class EmailManager:
 
         return email_obj
 
+    @validate_call
     def open_mailbox(self, mailbox_: str = "INBOX") -> None:
         """ Opens a mailbox. """
         self.imap.select(mailbox_)

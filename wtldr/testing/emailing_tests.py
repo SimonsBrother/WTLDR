@@ -12,8 +12,8 @@ from wtldr.modules.logging_ import create_logger
 def test_first_email(email_manager: emailing.EmailManager):
     """ Tries to get the first email using get_email, which is an email I sent to the account, which ensures emails can be retrieved by ID.
      This indirectly tests the Email static methods. """
-    expected_email = emailing.Email(1, 'Caleb Hair <calebthair@outlook.com>', 'Lab rat test subject',
-                                    "Lab rat lab rat lab rat", datetime.fromisoformat('2024-05-13 13:33:47'))
+    expected_email = emailing.Email(email_id=1, sender='Caleb Hair <calebthair@outlook.com>', subject='Lab rat test subject',
+                                    body="Lab rat lab rat lab rat", time_sent=datetime.fromisoformat('2024-05-13 13:33:47'))
 
     actual_email = email_manager.get_email_from_mailbox(1)
 
@@ -272,8 +272,9 @@ Links:
 [23] https://advertise.tldr.tech/?utm_source=tldr&utm_medium=newsletter&utm_campaign=advertisecta
 [24] https://a.tldrnewsletter.com/unsubscribe?ep=1&l=cfa2d55a-b7be-11e8-a3c9-06b79b628af2&lc=68b1568a-1130-11ef-90bb-8bb14c9311d5&p=e8cf6474-11c1-11ef-9716-c3259b496aae&pt=campaign&pv=4&spa=1715680897&t=1715682360&s=a053bc61c1a92adc7bd0f328cb8e2d24e60411630279148db30602433c43264f
 [25] https://tldr.tech/tech/manage?email=calebslabrat%40outlook.com"""
-    expected_email = emailing.Email(3, 'TLDR <dan@tldrnewsletter.com>', 'b\'GPT-4o crushes leaderboard \'',
-                                    "", datetime.fromisoformat('2024-05-14 10:26:00'))
+    expected_email = emailing.Email(email_id=3, sender='TLDR <dan@tldrnewsletter.com>', subject='GPT-4o crushes leaderboard ',
+                                    body=approximate_expected_body, time_sent=datetime.fromisoformat('2024-05-14 10:26:00'))
+
     actual_email = email_manager.get_email_from_mailbox(3)
 
     assert expected_email.__repr__() == actual_email.__repr__()  # Compares the object values excluding the body.

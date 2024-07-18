@@ -2,6 +2,8 @@ import sqlite3
 from logging import Logger
 from pathlib import Path
 
+from pydantic import validate_call
+
 from wtldr.modules import emailing
 
 
@@ -70,17 +72,19 @@ class WTLDRDatabase:
         self.cursor.execute(stmt)
         self.conn.commit()
 
+    @validate_call
     def insert_email(self, email: emailing.Email):
         """ Inserts a new email in the emails table. """
         values = (email.email_id, email.sender, email.subject, email.body, email.time_sent, False)
         self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?, ?)", values)
         self.conn.commit()
 
+    @validate_call
     def get_emails(self, email_ids: list[int]) -> list[emailing.Email]:
         emails = []
         rows = self.cursor.execute("SELECT * FROM emails WHERE email_id IN (?);", email_ids).fetchall()
         for row in rows:
-            email = emailing.Email(row[0], row[1], row[2], row[3], row[4])
+            email = emailing.Email(email_id=row[0], sender=row[1], subject=row[2], body=row[3], time_sent=row[4])
             emails.append(email)
 
         return emails
@@ -90,6 +94,7 @@ def create_new_wtldr_db(db_path: Path | str, logger: Logger) -> WTLDRDatabase:
     """ Creates a database file with the path specified, and creates the tables needed for the database to function.
 
     :param db_path: path to the database file.
+    :param logger: a Logger instance.
     :return: a WTLDRDatabase instance.
     """
     # Create the new file - exceptions should be handled outside the function
