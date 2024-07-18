@@ -7,7 +7,6 @@ from pydantic import validate_call
 from wtldr.modules import emailing
 
 
-# TODO: add more logging
 class WTLDRDatabase:
     def __init__(self, db_path: Path | str, logger: Logger):
         """ Connects to the database. May raise exceptions.
@@ -18,6 +17,7 @@ class WTLDRDatabase:
 
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
+        self.logger.info("Connected to database.")
 
     def __del__(self):
         # Attempt to close everything
@@ -35,32 +35,46 @@ class WTLDRDatabase:
         """ Creates each table needed for the system to work. """
         self.logger.info("Creating tables...")
         self._create_emails_table()
-        self._create_tldr_summaries_table()
+        self._create_summaries_table()
+        self._create_custom_summaries_table()
+        self._create_summaries_used_table()
         self.logger.info("Tables created.")
+
+    def _create_table(self, table_name: str, create_table_stmt: str):
+        """ Drops the table if it already exists, creates it, and commits. """
+        self.logger.info(f"Dropping {table_name} if possible...")
+        self.cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
+
+        self.logger.info(f"Creating {table_name}...")
+        self.cursor.execute(create_table_stmt)
+
+        self.logger.info(f"Committing...")
+        self.conn.commit()
+        self.logger.info(f"Table {table_name} created and committed.")
 
     def _create_emails_table(self):
         """ Creates a table for storing emails in current database connection."""
-        stmt = """
-        CREATE TABLE emails (
-            email_id INT NOT NULL,
-            sender VARCHAR(50) NOT NULL,
-            subject VARCHAR(200),
+        table_name = "emails"
+        stmt = f"""
+        CREATE TABLE {table_name} (
+            email_id INTEGER NOT NULL,
+            sender TEXT NOT NULL,
+            subject TEXT NOT NULL,
             body LONGTEXT NOT NULL,
-            time_sent VARCHAR(30) NOT NULL,
+            time_sent DATETIME NOT NULL,
             processed BOOL NOT NULL DEFAULT 0,
             PRIMARY KEY(email_id)
         );
         """
-        self.cursor.execute("DROP TABLE IF EXISTS emails;")
-        self.cursor.execute(stmt)
-        self.conn.commit()
+        self._create_table(table_name, stmt)
 
-    def _create_tldr_summaries_table(self):
+    def _create_summaries_table(self):
         """ Creates a table for storing TLDR summaries in current database connection. """
-        stmt = """
-        CREATE TABLE tldr_summaries (
-            summary_id INT AUTO_INCREMENT,
-            source_email_id INT NOT NULL,
+        table_name = "summaries"
+        stmt = f"""
+        CREATE TABLE {table_name} (
+            summary_id INTEGER AUTO_INCREMENT,
+            source_email_id INTEGER NOT NULL,
             summary LONGTEXT NOT NULL,
             url TEXT NOT NULL,
             processed BOOL NOT NULL DEFAULT 0,
@@ -68,9 +82,34 @@ class WTLDRDatabase:
             FOREIGN KEY (source_email_id) REFERENCES emails(email_id)
         );
         """
-        self.cursor.execute("DROP TABLE IF EXISTS tldr_summaries;")
-        self.cursor.execute(stmt)
-        self.conn.commit()
+        self._create_table(table_name, stmt)
+
+    def _create_custom_summaries_table(self):
+        """ Creates a table for storing custom summaries. """
+        table_name = "custom_summaries"
+        stmt = f"""
+        CREATE TABLE {table_name} (
+            custom_sum_id INTEGER AUTO_INCREMENT,
+            summary LONGTEXT NOT NULL,
+            prompt TEXT NOT NULL,
+            PRIMARY KEY(custom_sum_id)
+        );
+        """
+        self._create_table(table_name, stmt)
+
+    def _create_summaries_used_table(self):
+        """ Creates a table for storing which summaries are used in custom summaries. """
+        table_name = "summaries_used"
+        stmt = f"""
+        CREATE TABLE {table_name} (
+            custom_sum_id INTEGER,
+            summary_id INTEGER,
+            PRIMARY KEY (custom_sum_id, summary_id),
+            FOREIGN KEY (custom_sum_id) REFERENCES custom_summaries(custom_sum_id),
+            FOREIGN KEY (summary_id) REFERENCES summaries(summary_id)
+        );
+        """
+        self._create_table(table_name, stmt)
 
     @validate_call
     def insert_email(self, email: emailing.Email):
