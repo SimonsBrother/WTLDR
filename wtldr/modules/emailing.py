@@ -44,7 +44,7 @@ class Email:
     sender: str
     subject: str
     body: str
-    time_sent: datetime
+    time_sent: datetime  # TODO: Important, sometimes this isn't datetime, use pydantic
 
     def __repr__(self):
         return (f"Email(email_id={self.email_id}, sender='{self.sender}', subject='{self.subject}', "

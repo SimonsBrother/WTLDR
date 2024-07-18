@@ -294,6 +294,9 @@ def test_search_for_tldr(email_manager: emailing.EmailManager):
     email_manager.close_mailbox()
 
 
+# TODO: make invalid tests for Email static methods
+
+
 if __name__ == "__main__":
     secrets = dotenv_values()
 
