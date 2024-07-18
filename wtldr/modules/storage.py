@@ -2,9 +2,21 @@ import sqlite3
 from logging import Logger
 from pathlib import Path
 
-from pydantic import validate_call
+from pydantic import validate_call, BaseModel
 
-from wtldr.modules import emailing
+from wtldr.modules import emailing, constants
+
+
+# TODO change deletion and updating constraints
+
+
+class Summary(BaseModel):
+    summary_id: int
+    source_email_id: int
+    summary: str
+    url: str
+    summary_type: constants.SummaryTypes
+    processed: bool
 
 
 class WTLDRDatabase:
@@ -36,7 +48,7 @@ class WTLDRDatabase:
         self.logger.info("Creating tables...")
         self._create_emails_table()
         self._create_summaries_table()
-        self._create_custom_summaries_table()
+        self._create_super_summaries_table()
         self._create_summaries_used_table()
         self.logger.info("Tables created.")
 
@@ -85,28 +97,28 @@ class WTLDRDatabase:
         """
         self._create_table(table_name, stmt)
 
-    def _create_custom_summaries_table(self):
-        """ Creates a table for storing custom summaries. """
-        table_name = "custom_summaries"
+    def _create_super_summaries_table(self):
+        """ Creates a table for storing super summaries. """
+        table_name = "super_summaries"
         stmt = f"""
         CREATE TABLE {table_name} (
-            custom_sum_id INTEGER AUTO_INCREMENT,
+            super_sum_id INTEGER AUTO_INCREMENT,
             summary LONGTEXT NOT NULL,
             prompt TEXT NOT NULL,
-            PRIMARY KEY(custom_sum_id)
+            PRIMARY KEY(super_sum_id)
         );
         """
         self._create_table(table_name, stmt)
 
     def _create_summaries_used_table(self):
-        """ Creates a table for storing which summaries are used in custom summaries. """
+        """ Creates a table for storing which summaries are used in super summaries. """
         table_name = "summaries_used"
         stmt = f"""
         CREATE TABLE {table_name} (
-            custom_sum_id INTEGER,
+            super_sum_id INTEGER,
             summary_id INTEGER,
-            PRIMARY KEY (custom_sum_id, summary_id),
-            FOREIGN KEY (custom_sum_id) REFERENCES custom_summaries(custom_sum_id),
+            PRIMARY KEY (super_sum_id, summary_id),
+            FOREIGN KEY (super_sum_id) REFERENCES custom_summaries(super_sum_id),
             FOREIGN KEY (summary_id) REFERENCES summaries(summary_id)
         );
         """
@@ -115,7 +127,7 @@ class WTLDRDatabase:
     @validate_call
     def insert_email(self, email: emailing.Email):
         """ Inserts a new email in the emails table. """
-        values = (email.email_id, email.sender, email.subject, email.body, email.time_sent, False)
+        values = (email.email_id, email.sender, email.subject, email.body, email.time_sent, email.processed)
         self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?, ?)", values)
         self.conn.commit()
 
@@ -124,12 +136,12 @@ class WTLDRDatabase:
         emails = []
         rows = self.cursor.execute("SELECT * FROM emails WHERE email_id IN (?);", email_ids).fetchall()
         for row in rows:
-            email = emailing.Email(email_id=row[0], sender=row[1], subject=row[2], body=row[3], time_sent=row[4])
+            email = emailing.Email(email_id=row[0], sender=row[1], subject=row[2], body=row[3], time_sent=row[4], processed=row[5])
             emails.append(email)
 
         return emails
 
-    # TODO: functions for interacting with database
+    # TODO: functions for interacting with database?
 
 
 def create_new_wtldr_db(db_path: Path | str, logger: Logger) -> WTLDRDatabase:

@@ -38,11 +38,12 @@ class Email(BaseModel):
     sender: str
     subject: str
     body: str
-    time_sent: datetime  # TODO: Important, sometimes this isn't datetime, use pydantic
+    time_sent: datetime
+    processed: bool
 
     def __repr__(self):
         return (f"Email(email_id={self.email_id}, sender='{self.sender}', subject='{self.subject}', "
-                f"time_sent='{self.time_sent}')")
+                f"time_sent='{self.time_sent}', processed='{self.processed}')")
 
     # Much of the code below was derived from
     # https://thepythoncode.com/article/reading-emails-in-python?utm_content=cmp-true
@@ -125,7 +126,8 @@ class Email(BaseModel):
                      sender=Email.get_sender(msg),
                      subject=Email.get_subject(msg),
                      body=Email.get_body(msg),
-                     time_sent=Email.get_sent_datetime(msg))
+                     time_sent=Email.get_sent_datetime(msg),
+                     processed=False)
 
 
 class EmailManager:
