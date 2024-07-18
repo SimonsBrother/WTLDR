@@ -77,6 +77,7 @@ class WTLDRDatabase:
             source_email_id INTEGER NOT NULL,
             summary LONGTEXT NOT NULL,
             url TEXT NOT NULL,
+            summary_type TEXT NOT NULL,
             processed BOOL NOT NULL DEFAULT 0,
             PRIMARY KEY(summary_id),
             FOREIGN KEY (source_email_id) REFERENCES emails(email_id)
@@ -127,6 +128,8 @@ class WTLDRDatabase:
             emails.append(email)
 
         return emails
+
+    # TODO: functions for interacting with database
 
 
 def create_new_wtldr_db(db_path: Path | str, logger: Logger) -> WTLDRDatabase:
