@@ -2,16 +2,16 @@ import sqlite3
 from logging import Logger
 from pathlib import Path
 
-from pydantic import validate_call, BaseModel
+from pydantic import validate_call, BaseModel, Field
 
 from wtldr.modules import emailing, constants
 
 
-# TODO change deletion and updating constraints
+# TODO create indexes
 
 
 class Summary(BaseModel):
-    summary_id: int
+    summary_id: int | None = Field(default=None)
     source_email_id: int
     summary: str
     url: str
@@ -125,23 +125,54 @@ class WTLDRDatabase:
         self._create_table(table_name, stmt)
 
     @validate_call
-    def insert_email(self, email: emailing.Email):
-        """ Inserts a new email in the emails table. """
-        values = (email.email_id, email.sender, email.subject, email.body, email.time_sent, email.processed)
-        self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?, ?)", values)
-        self.conn.commit()
+    def insert_email(self, email: emailing.Email) -> bool:
+        """ Inserts a new email in the emails table. Does nothing if an email with the same ID already exists.
+        :return: True if the email was inserted, False otherwise.
+        """
+        id_not_used = self.cursor.execute("SELECT email_id FROM emails WHERE email_id = ?", (str(email.email_id),)).fetchone() is None
+        if id_not_used:
+            values = (email.email_id, email.sender, email.subject, email.body, email.time_sent, email.processed)
+            self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?, ?)", values)
+            self.conn.commit()
+            return True
+        return False
 
     @validate_call
     def get_emails(self, email_ids: list[int]) -> list[emailing.Email]:
+        """ Given a list of email IDs, returns a list of Email objects with all the information of each email. """
         emails = []
         rows = self.cursor.execute("SELECT * FROM emails WHERE email_id IN (?);", email_ids).fetchall()
         for row in rows:
-            email = emailing.Email(email_id=row[0], sender=row[1], subject=row[2], body=row[3], time_sent=row[4], processed=row[5])
+            email = emailing.Email(email_id=row[0], sender=row[1], subject=row[2], body=row[3], time_sent=row[4],
+                                   processed=row[5])
             emails.append(email)
 
         return emails
 
-    # TODO: functions for interacting with database?
+    @validate_call
+    def add_summary(self, summary: Summary):
+        """ Adds a new summary to the database. Note that the ID of the summary object passed is ignored. """
+        # TODO add option to insert ID
+        values = summary.source_email_id, summary.summary, summary.url, summary.summary_type.value, summary.processed
+        self.cursor.execute("INSERT INTO summaries (source_email_id, summary, url, summary_type, processed) VALUES(?, ?, ?, ?, ?)", values)
+        self.conn.commit()
+
+    @validate_call
+    def get_all_unprocessed_summaries(self, summary_type: constants.SummaryTypes) -> list[Summary]:
+        """ Gets all the summaries of a certain type that have not yet been processed. """
+        summaries = []
+        rows = self.cursor.execute("SELECT * FROM summaries WHERE summary_type == ? AND NOT processed;",
+                                   (summary_type.value,))
+        for row in rows:
+            summary = Summary(summary_id=row[0],
+                              source_email_id=row[1],
+                              summary=row[2],
+                              url=row[3],
+                              summary_type=row[4],
+                              processed=row[5])
+            summaries.append(summary)
+
+        return summaries
 
 
 def create_new_wtldr_db(db_path: Path | str, logger: Logger) -> WTLDRDatabase:

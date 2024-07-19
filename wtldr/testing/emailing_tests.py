@@ -295,7 +295,7 @@ def test_search_for_tldr(email_manager: emailing.EmailManager):
     email_manager.close_mailbox()
 
 
-# TODO: make invalid tests for Email static methods
+# TODO: make invalid tests for Email static methods, make more invalid tests in general
 
 
 if __name__ == "__main__":

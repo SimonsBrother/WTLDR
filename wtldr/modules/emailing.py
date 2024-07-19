@@ -191,11 +191,13 @@ class EmailManager:
     def open_mailbox(self, mailbox_: str = "INBOX") -> None:
         """ Opens a mailbox. """
         self.imap.select(mailbox_)
+        self.logger.info(f"Opened mailbox {mailbox_}.")
 
     def close_mailbox(self):
         """ Try to close any open mailbox. Logs the exception on failure. """
         try:
             self.imap.close()
+            self.logger.info("Closed mailbox.")
         except Exception as e:
             self.logger.error(f"Failed to close mailbox: {e}")
 
