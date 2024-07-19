@@ -23,13 +23,13 @@ def test_email_interactions(wtldr_db: WTLDRDatabase):
 def test_summary_interactions(wtldr_db: WTLDRDatabase):
     # Create summaries
     summaries = [
-        Summary(summary="1", summary_type=constants.SummaryTypes.TLDR, processed=True,
+        Summary(summary="1", summary_type=constants.SummaryType.TLDR, processed=True,
                 source_email_id=1, url="example1.com"),
-        Summary(summary="2", summary_type=constants.SummaryTypes.TLDR, processed=True,
+        Summary(summary="2", summary_type=constants.SummaryType.TLDR, processed=True,
                 source_email_id=1, url="example2.com"),
-        Summary(summary="3", summary_type=constants.SummaryTypes.TLDR, processed=False,
+        Summary(summary="3", summary_type=constants.SummaryType.TLDR, processed=False,
                 source_email_id=1, url="example3.com"),
-        Summary(summary="4", summary_type=constants.SummaryTypes.TLDR, processed=False,
+        Summary(summary="4", summary_type=constants.SummaryType.TLDR, processed=False,
                 source_email_id=1, url="example4.com"),
     ]
 
@@ -38,7 +38,7 @@ def test_summary_interactions(wtldr_db: WTLDRDatabase):
         wtldr_db.add_summary(summary)
 
     # Test retrieving unprocessed summaries
-    for summary in wtldr_db.get_all_unprocessed_summaries(constants.SummaryTypes.TLDR):
+    for summary in wtldr_db.get_all_unprocessed_summaries(constants.SummaryType.TLDR):
         # Make sure that only unprocessed summaries are returned, and that they are as expected.
         assert summary.processed is False and summary.summary in ("3", "4")
 

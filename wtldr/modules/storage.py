@@ -15,8 +15,8 @@ class Summary(BaseModel):
     source_email_id: int
     summary: str
     url: str
-    summary_type: constants.SummaryTypes
-    processed: bool
+    summary_type: constants.SummaryType
+    processed: bool = Field(default=False)
 
 
 class WTLDRDatabase:
@@ -158,7 +158,7 @@ class WTLDRDatabase:
         self.conn.commit()
 
     @validate_call
-    def get_all_unprocessed_summaries(self, summary_type: constants.SummaryTypes) -> list[Summary]:
+    def get_all_unprocessed_summaries(self, summary_type: constants.SummaryType) -> list[Summary]:
         """ Gets all the summaries of a certain type that have not yet been processed. """
         summaries = []
         rows = self.cursor.execute("SELECT * FROM summaries WHERE summary_type == ? AND NOT processed;",

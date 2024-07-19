@@ -1,5 +1,5 @@
 from enum import Enum
 
 
-class SummaryTypes(Enum):
+class SummaryType(Enum):
     TLDR = "TLDR"
