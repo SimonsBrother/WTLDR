@@ -13,25 +13,25 @@ def save_emails_to_db(mailbox: MailBox, db: WTLDRDatabase) -> [int]:
     :return: the number of emails saved.
     """
     # Archive emails so they are not re-fetched
-    ids_of_saved_emails = []
+    uids_of_saved_emails = []
     for email in mailbox.fetch(criteria=AND(from_="dan@tldrnewsletter.com")):
         # If UID is valid
         if email.uid is not None:
-            # Save to database - if already saved, insert_email will ignore it
-            db.insert_email(Email(email_id=int(email.uid), sender=email.from_, subject=email.subject, body=email.text, time_sent=email.date))
-            ids_of_saved_emails.append(email.uid)
+            # Save to database
+            db.insert_email(Email(sender=email.from_, subject=email.subject, body=email.text, time_sent=email.date))
+            uids_of_saved_emails.append(email.uid)
 
     # Move saved emails to archive
-    mailbox.move(ids_of_saved_emails, "ARCHIVE")
+    mailbox.move(uids_of_saved_emails, "ARCHIVE")
 
-    return ids_of_saved_emails
+    return uids_of_saved_emails
 
 
 # TODO break into smaller functions
 def extract_tldr_summaries(tldr_email: Email):
     body = tldr_email.body
 
-    # Get links
+    # Get links from bottom of email
     links = {}
     links_start_cue = "Links:\r\n------\r\n"
     links_start_index = body.find(links_start_cue) + len(links_start_cue)

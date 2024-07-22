@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 class Email(BaseModel):
     """ Dataclass for storing details about emails.
-    :var email_id: int, the ID of the email according to the email server.
+    :var email_id: int, the ID of the email in the database.
     :var sender: str, the email address of who sent it.
     :var subject: str, the email subject.
     :var body: str, the email body.

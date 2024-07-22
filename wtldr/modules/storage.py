@@ -66,7 +66,7 @@ class WTLDRDatabase:
         table_name = "emails"
         stmt = f"""
         CREATE TABLE {table_name} (
-            email_id INTEGER NOT NULL,
+            email_id INTEGER AUTO_INCREMENT,
             sender TEXT NOT NULL,
             subject TEXT NOT NULL,
             body LONGTEXT NOT NULL,
@@ -122,17 +122,11 @@ class WTLDRDatabase:
         self._create_table(table_name, stmt)
 
     @validate_call
-    def insert_email(self, email: emailing.Email) -> bool:
-        """ Inserts a new email in the emails table. Does nothing if an email with the same ID already exists.
-        :return: True if the email was inserted, False otherwise.
-        """
-        id_not_used = self.cursor.execute("SELECT email_id FROM emails WHERE email_id = ?", (str(email.email_id),)).fetchone() is None
-        if id_not_used:
-            values = (email.email_id, email.sender, email.subject, email.body, email.time_sent, email.processed)
-            self.cursor.execute("INSERT INTO emails VALUES (?, ?, ?, ?, ?, ?)", values)
-            self.conn.commit()
-            return True
-        return False
+    def insert_email(self, email: emailing.Email):
+        """ Inserts a new email in the emails table. Does nothing if an email with the same ID already exists. """
+        values = (email.sender, email.subject, email.body, email.time_sent, email.processed)
+        self.cursor.execute("INSERT INTO emails(sender, subject, body, time_sent, processed) VALUES (?, ?, ?, ?, ?)", values)
+        self.conn.commit()
 
     @validate_call
     def get_emails(self, email_ids: list[int]) -> list[emailing.Email]:
