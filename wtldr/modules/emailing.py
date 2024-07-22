@@ -17,7 +17,7 @@ class Email(BaseModel):
     :var time_sent: datetime, the time the email was sent.
     :var processed: bool, flag indicating whether the email was processed.
     """
-    email_id: int
+    email_id: int = Field(default=-1)  # Default to -1 to indicate this was not retrieved from database.
     sender: str
     subject: str
     body: str
