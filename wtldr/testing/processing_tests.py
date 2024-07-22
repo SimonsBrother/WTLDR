@@ -10,6 +10,7 @@ def test_save_tldr_emails_to_db(email_manager: emailing.EmailManager, wtldr_db: 
     print(processing.save_emails_to_db(email_manager, wtldr_db))
 
 
+# TODO make proper tests
 def test_extract_tldr_summaries(wtldr_db: WTLDRDatabase):
     print(processing.extract_tldr_summaries(wtldr_db.get_emails([3])[0]))
 

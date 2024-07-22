@@ -9,7 +9,7 @@ def save_emails_to_db(email_manager: EmailManager, wtldr_db: WTLDRDatabase) -> i
     """ Save all emails in the email account to the database. May raise exceptions.
     :return: the number of emails saved.
     """
-    # TODO archive emails after getting them
+    # TODO archive emails after saving them
     ids = email_manager.get_tldr_email_ids()
 
     count = 0  # Count how many emails are added.
