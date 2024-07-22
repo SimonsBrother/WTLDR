@@ -1,33 +1,30 @@
 import re
 
+from imap_tools import MailBox, AND
+
 from wtldr.modules.constants import SummaryType
-from wtldr.modules.emailing import Email, EmailManager
+from wtldr.modules.emailing import Email
 from wtldr.modules.storage import WTLDRDatabase, Summary
 
 
-def save_emails_to_db(email_manager: EmailManager, wtldr_db: WTLDRDatabase) -> int:
+# TODO test
+def save_emails_to_db(mailbox: MailBox, db: WTLDRDatabase) -> [int]:
     """ Save all emails in the email account to the database. May raise exceptions.
     :return: the number of emails saved.
     """
-    # TODO archive emails after saving them
-    ids = email_manager.get_tldr_email_ids()
+    # Archive emails so they are not re-fetched
+    ids_of_saved_emails = []
+    for email in mailbox.fetch(criteria=AND(from_="dan@tldrnewsletter.com")):
+        # If UID is valid
+        if email.uid is not None:
+            # Save to database - if already saved, insert_email will ignore it
+            db.insert_email(Email(email_id=int(email.uid), sender=email.from_, subject=email.subject, body=email.text, time_sent=email.date))
+            ids_of_saved_emails.append(email.uid)
 
-    count = 0  # Count how many emails are added.
-    email_manager.open_mailbox("INBOX")
-    try:
-        for id_ in ids:
-            # Get email from account
-            email = email_manager.get_email(id_)
-            # Attempt to insert email
-            if wtldr_db.insert_email(email):
-                count += 1
-    except Exception as e:
-        raise e
-    finally:
-        # Make sure mailbox is closed
-        email_manager.close_mailbox()
+    # Move saved emails to archive
+    mailbox.move(ids_of_saved_emails, "ARCHIVE")
 
-    return count
+    return ids_of_saved_emails
 
 
 # TODO break into smaller functions

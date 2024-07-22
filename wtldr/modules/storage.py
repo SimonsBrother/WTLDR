@@ -7,9 +7,6 @@ from pydantic import validate_call, BaseModel, Field
 from wtldr.modules import emailing, constants
 
 
-# TODO create indexes
-
-
 class Summary(BaseModel):
     summary_id: int | None = Field(default=None)
     source_email_id: int
@@ -152,7 +149,6 @@ class WTLDRDatabase:
     @validate_call
     def add_summary(self, summary: Summary):
         """ Adds a new summary to the database. Note that the ID of the summary object passed is ignored. """
-        # TODO add option to insert ID
         values = summary.source_email_id, summary.summary, summary.url, summary.summary_type.value, summary.processed
         self.cursor.execute("INSERT INTO summaries (source_email_id, summary, url, summary_type, processed) VALUES(?, ?, ?, ?, ?)", values)
         self.conn.commit()
