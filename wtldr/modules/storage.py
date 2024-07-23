@@ -8,6 +8,14 @@ from wtldr.modules import emailing, constants
 
 
 class Summary(BaseModel):
+    """ Represents a summary, of an online article, in the database.
+    :var summary_id (None by default): int | None, the ID of the summary in the database.
+    :var source_email_id: int, the ID of the email containing this summary in the database.
+    :var summary: str, the summary content.
+    :var url: str, the URL to the article being summarised.
+    :var summary_type: SummaryType, the type of the summary.
+    :var processed: bool (False by default), True if the summary was processed for some purpose.
+    """
     summary_id: int | None = Field(default=None)
     source_email_id: int
     summary: str
@@ -17,9 +25,17 @@ class Summary(BaseModel):
 
 
 class WTLDRDatabase:
-    def __init__(self, db_path: Path | str, logger: Logger):
-        """ Connects to the database. May raise exceptions.
+    """ Stores a connection to the database and any related attributes and methods that make it easier to interact
+    with the database.
 
+    :var conn: Connection to the database
+    :var cursor: a cursor created from the database connection.
+    :var logger: the logger instance used for logging, passed in on instantiation.
+    """
+    def __init__(self, db_path: Path | str, logger: Logger):
+        """ Connects to the database.
+
+        :raises sqlite3.OperationalError: issues may arise when trying to connect to the database (if it does not exist).
         :param db_path: the path to the database file.
         """
         self.logger = logger
@@ -41,7 +57,10 @@ class WTLDRDatabase:
             self.logger.error(f"Could not close database connection: {e}")
 
     def create_tables(self):
-        """ Creates each table needed for the system to work. """
+        """ Creates each table needed for the system to work.
+        :raises sqlite3.ProgrammingError: Raised for programming errors, such as using a closed database connection.
+        :raises sqlite3.DataError: Raised for errors related to the processing of data, such as data type mismatches or values out of range.
+        """
         self.logger.info("Creating tables...")
         self._create_emails_table()
         self._create_summaries_table()
@@ -50,7 +69,14 @@ class WTLDRDatabase:
         self.logger.info("Tables created.")
 
     def _create_table(self, table_name: str, create_table_stmt: str):
-        """ Drops the table if it already exists, creates it, and commits. """
+        """ Drops the table if it already exists, creates it, and commits.
+
+        :raises sqlite3.ProgrammingError: Raised for programming errors, such as using a closed database connection.
+        :raises sqlite3.DataError: Raised for errors related to the processing of data, such as data type mismatches or values out of range.
+
+        :param table_name: the name of the table to create. Risk of SQL injection if data from user is passed.
+        :param create_table_stmt: the SQL statement to create the table.
+        """
         self.logger.info(f"Dropping {table_name} if possible...")
         self.cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
 
@@ -62,7 +88,10 @@ class WTLDRDatabase:
         self.logger.info(f"Table {table_name} created and committed.")
 
     def _create_emails_table(self):
-        """ Creates a table for storing emails in current database connection."""
+        """ Creates a table for storing emails in current database connection.
+        :raises sqlite3.ProgrammingError: Raised for programming errors, such as using a closed database connection.
+        :raises sqlite3.DataError: Raised for errors related to the processing of data, such as data type mismatches or values out of range.
+        """
         table_name = "emails"
         stmt = f"""
         CREATE TABLE {table_name} (
@@ -78,7 +107,10 @@ class WTLDRDatabase:
         self._create_table(table_name, stmt)
 
     def _create_summaries_table(self):
-        """ Creates a table for storing TLDR summaries in current database connection. """
+        """ Creates a table for storing TLDR summaries in current database connection.
+        :raises sqlite3.ProgrammingError: Raised for programming errors, such as using a closed database connection.
+        :raises sqlite3.DataError: Raised for errors related to the processing of data, such as data type mismatches or values out of range.
+        """
         table_name = "summaries"
         stmt = f"""
         CREATE TABLE {table_name} (
@@ -95,7 +127,10 @@ class WTLDRDatabase:
         self._create_table(table_name, stmt)
 
     def _create_super_summaries_table(self):
-        """ Creates a table for storing super summaries. """
+        """ Creates a table for storing super summaries.
+        :raises sqlite3.ProgrammingError: Raised for programming errors, such as using a closed database connection.
+        :raises sqlite3.DataError: Raised for errors related to the processing of data, such as data type mismatches or values out of range.
+        """
         table_name = "super_summaries"
         stmt = f"""
         CREATE TABLE {table_name} (
@@ -108,7 +143,10 @@ class WTLDRDatabase:
         self._create_table(table_name, stmt)
 
     def _create_summaries_used_table(self):
-        """ Creates a table for storing which summaries are used in super summaries. """
+        """ Creates a table for storing which summaries are used in super summaries.
+        :raises sqlite3.ProgrammingError: Raised for programming errors, such as using a closed database connection.
+        :raises sqlite3.DataError: Raised for errors related to the processing of data, such as data type mismatches or values out of range.
+        """
         table_name = "summaries_used"
         stmt = f"""
         CREATE TABLE {table_name} (
@@ -123,26 +161,18 @@ class WTLDRDatabase:
 
     @validate_call
     def insert_email(self, email: emailing.Email):
-        """ Inserts a new email in the emails table. Does nothing if an email with the same ID already exists. """
+        """ Inserts a new email in the emails table. Does nothing if an email with the same ID already exists.
+        :raises sqlite3.IntegrityError: Raised when the relational integrity of the database is affected, such as a foreign key check failure.
+        """
         values = (email.sender, email.subject, email.body, email.time_sent, email.processed)
         self.cursor.execute("INSERT INTO emails(sender, subject, body, time_sent, processed) VALUES (?, ?, ?, ?, ?)", values)
         self.conn.commit()
 
     @validate_call
-    def get_emails(self, email_ids: list[int]) -> list[emailing.Email]:
-        """ Given a list of email IDs, returns a list of Email objects with all the information of each email. """
-        emails = []
-        rows = self.cursor.execute("SELECT * FROM emails WHERE email_id IN (?);", email_ids).fetchall()
-        for row in rows:
-            email = emailing.Email(email_id=row[0], sender=row[1], subject=row[2], body=row[3], time_sent=row[4],
-                                   processed=row[5])
-            emails.append(email)
-
-        return emails
-
-    @validate_call
     def add_summary(self, summary: Summary):
-        """ Adds a new summary to the database. Note that the ID of the summary object passed is ignored. """
+        """ Adds a new summary to the database. Note that the ID of the summary object passed is ignored.
+        :raises sqlite3.IntegrityError: Raised when the relational integrity of the database is affected, such as a foreign key check failure.
+        """
         values = summary.source_email_id, summary.summary, summary.url, summary.summary_type.value, summary.processed
         self.cursor.execute("INSERT INTO summaries (source_email_id, summary, url, summary_type, processed) VALUES(?, ?, ?, ?, ?)", values)
         self.conn.commit()
@@ -168,13 +198,17 @@ class WTLDRDatabase:
 def create_new_wtldr_db(db_path: Path | str, logger: Logger) -> WTLDRDatabase:
     """ Creates a database file with the path specified, and creates the tables needed for the database to function.
 
+    :raises IsADirectoryError: the database file should be a file, not a directory
+    :raises PermissionError: program must have permission to read from, write to, and create the database file.
+    :raises OSError: general exception that should be handled.
+
     :param db_path: path to the database file.
     :param logger: a Logger instance.
     :return: a WTLDRDatabase instance.
     """
     # Create the new file - exceptions should be handled outside the function
-    file = open(db_path, "w")
-    file.close()
+    with open(db_path, "w"):
+        pass
 
     db = WTLDRDatabase(db_path, logger)
 

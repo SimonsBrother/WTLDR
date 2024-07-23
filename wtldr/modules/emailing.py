@@ -10,14 +10,14 @@ from pydantic import BaseModel, Field
 
 class Email(BaseModel):
     """ Dataclass for storing details about emails.
-    :var email_id: int, the ID of the email in the database.
+    :var email_id: int | None (default to None), the ID of the email in the database.
     :var sender: str, the email address of who sent it.
     :var subject: str, the email subject.
     :var body: str, the email body.
     :var time_sent: datetime, the time the email was sent.
-    :var processed: bool, flag indicating whether the email was processed.
+    :var processed: bool (default to False), True if the email was processed for some purpose.
     """
-    email_id: int = Field(default=-1)  # Default to -1 to indicate this was not retrieved from database.
+    email_id: int | None = Field(default=None)  # Default to None to indicate this was not retrieved from database.
     sender: str
     subject: str
     body: str

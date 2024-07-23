@@ -12,12 +12,17 @@ def test_database_creation():
 
 
 def test_email_interactions(wtldr_db: WTLDRDatabase):
-    email = emailing.Email(email_id=1, sender='Caleb Hair <calebthair@outlook.com>', subject='Lab rat test subject',
-                           body="Lab rat lab rat lab rat", time_sent=datetime.fromisoformat('2024-05-13 13:33:47'), processed=False)
+    """ Test emails are correctly saved and retrieved. """
+    email = emailing.Email(sender="Caleb Hair <calebthair@outlook.com>", subject="Lab rat test subject",
+                           body="Lab rat lab rat lab rat", time_sent=datetime.fromisoformat("2024-05-13 13:33:47"))
 
-    assert wtldr_db.insert_email(email)  # Test adding an email functions correctly
-    added_email = wtldr_db.get_emails([1])[0]  # Test emails can be retrieved
-    assert added_email == email  # Test retrieved email matches.
+    wtldr_db.insert_email(email)  # Test adding an email functions correctly
+
+    row = wtldr_db.cursor.execute("SELECT sender, subject, body, time_sent, processed FROM emails WHERE subject = ?", (email.subject,)).fetchone()
+
+    actual_email = emailing.Email(sender=row[0], subject=row[1], body=row[2], time_sent=row[3], processed=row[4])
+
+    assert actual_email == email  # Test retrieved email matches.
 
 
 def test_summary_interactions(wtldr_db: WTLDRDatabase):
